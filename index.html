@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบสั่งของ V13 - Mobile Thumb-Friendly Zone</title>
+    <title>ระบบสั่งของ V14 - Mobile Thumb-Friendly Zone</title>
     <style>
         :root { 
             --primary: #05B745; 
@@ -18,9 +18,9 @@
         body { 
             background-color: var(--bg); 
             margin: 0; 
-            padding: 10px 10px 140px 10px; /* เพิ่มพื้นที่ด้านล่างเผื่อให้เลื่อนข้ามปุ่มลอยที่ขยับสูงขึ้น */
+            padding: 10px 10px 140px 10px; 
             min-height: 100vh;
-        }
+        } 
 
         h1 { 
             font-size: 1.2rem; 
@@ -41,6 +41,43 @@
             padding: 12px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             border: 1px solid #eaeaea;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .product-img-box {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid #ddd;
+        }
+
+        .product-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-img-box .no-img {
+            font-size: 10px;
+            color: #888;
+            text-align: center;
+            padding: 4px;
+        }
+
+        .product-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 70px;
         }
         
         .product-name { 
@@ -48,8 +85,14 @@
             font-weight: 600; 
             color: #333; 
             line-height: 1.4;
-            margin-bottom: 10px;
             word-break: break-word;
+            margin-bottom: 5px;
+        }
+
+        .product-code {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
         }
         
         .controls-row { 
@@ -84,10 +127,8 @@
             min-width: 30px; 
             text-align: center;
             color: #333;
-        }
+        } 
 
-        /* ปรับตำแหน่งปุ่มลอยสีม่วงให้ขยับสูงขึ้นจากขอบล่างจอ (จาก 25px เป็น 85px) */
-        /* ตรงนี้จะเป็นโซนที่นิ้วโป้งเอื้อมกดได้ง่ายที่สุดเวลากำมือถือป้อนข้อมูล */
         .floating-action-btn {
             position: fixed;
             bottom: 85px; 
@@ -112,9 +153,8 @@
             font-size: 9px;
             font-weight: bold;
             margin-top: 2px;
-        }
+        } 
 
-        /* หน้าต่างป๊อปอัปเด้งกลางจอ */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -168,7 +208,7 @@
             color: #2b2b2b;
             border: 1px solid #e2e8f0;
             margin-bottom: 15px;
-        }
+        } 
 
         .modal-btn {
             width: 100%;
@@ -190,15 +230,15 @@
         }
     </style>
 </head>
-<body>
+<body> 
 
-<h1>🛒 รายการสั่งซื้อสินค้า</h1>
+<h1>🛒 รายการสั่งซื้อสินค้า</h1> 
 
-<div id="productContainer" class="product-list"></div>
+<div id="productContainer" class="product-list"></div> 
 
 <button class="floating-action-btn" onclick="generateOrder()">
     📄<span>สรุปออเดอร์</span>
-</button>
+</button> 
 
 <div id="orderModal" class="modal-overlay">
     <div class="modal-content">
@@ -208,70 +248,86 @@
         <button class="modal-btn" style="background:var(--primary);" onclick="copyToClipboard()">📋 คัดลอกส่ง LINE</button>
         <button class="modal-btn" style="background:#6c757d; font-size: 14px; padding: 10px;" onclick="closeModal()">ปิดหน้าต่าง</button>
     </div>
-</div>
+</div> 
 
-<textarea id="hiddenTextarea"></textarea>
+<textarea id="hiddenTextarea"></textarea> 
 
 <script>
+    // โครงสร้างข้อมูลใหม่ที่มี รหัสสินค้า และการตั้งค่าแสดงรูปภาพ
     const defaultProducts = [
-        "แหลมทอง ไส้กรอกจัมโบ้รมควัน (15 ชิ้น/1000 กรัม)",
-        "แหลมทอง ไส้กรอกเวียนนาอีสาน (1000 กรัม)",
-        "อเนกฟาร์ม ไข่นกกระทาต้ม (50 ฟอง)",
-        "ลูกชิ้นเนื้อวัว สว. ปองส้ม (1000 กรัม)",
-        "ไส้กรอกแฟรงค์ 3 (12ชม.) ไก่ฟาร์ม (1000 กรัม)",
-        "AFM ลูกชิ้นปลาใหญ่ (500 กรัม)",
-        "ลูกชิ้นเอ็นไก่ 60ลูก BigBig B.B (1000 กรัม)",
-        "TVI ปูอัดจัมโบ้ (เนื้อปลาบดปรุงรสผสมกลิ่นปู) พิเศษ 11 ชิ้น",
-        "TVI ปูอัด 12 cm. (เนื้อปลาบดปรุงรสผสมกลิ่นปู) 1000 กรัม",
-        "PFP ก้ามปูยักษ์ คุ้มกว่า 10+2 ก้าม (500 กรัม)",
-        "PFP เต้าหู้ปลาลูกเต๋า (500 กรัม)",
-        "AFM ไส้กรอกไก่ชีสเต็มคำสอดไส้ชีสเขียว (1000 กรัม)",
-        "AFM ไส้กรอกไก่ย่างลุยไฟ (1000 กรัม)",
-        "ฟาร์มสุข ไก่ยอใหญ่สไลด์พริก B (1000 กรัม)",
-        "ยอเส้น ไก่ฟาร์ม (2 ชิ้น /900 กรัม)"
-    ];
+        { id: "8850448131222", name: "แหลมทอง ไส้กรอกจัมโบ้รมควัน (15 ชิ้น/1000 กรัม)", hasImage: true },
+        { id: "8850448198621", name: "แหลมทอง ไส้กรอกเวียนนาอีสาน (1000 กรัม)", hasImage: true },
+        { id: "8854721009901", name: "อเนกฟาร์ม ไข่นกกระทาต้ม (50 ฟอง)", hasImage: false }, // ข้ามตามเงื่อนไข
+        { id: "20019", name: "ลูกชิ้นเนื้อวัว สว. ปองส้ม (1000 กรัม)", hasImage: true },
+        { id: "8851055842983", name: "ไส้กรอกแฟรงค์ 3 (12ชม.) ไก่ฟาร์ม (1000 กรัม)", hasImage: true },
+        { id: "20017", name: "AFM ลูกชิ้นปลาใหญ่ (500 กรัม)", hasImage: true },
+        { id: "20014", name: "ลูกชิ้นเอ็นไก่ 60ลูก BigBig B.B (1000 กรัม)", hasImage: true },
+        { id: "8850016070359", name: "TVI ปูอัดจัมโบ้ (เนื้อปลาบดปรุงรสผสมกลิ่นปู) พิเศษ 11 ชิ้น", hasImage: true },
+        { id: "8850016070014", name: "TVI ปูอัด 12 cm. (เนื้อปลาบดปรุงรสผสมกลิ่นปู) 1000 กรัม", hasImage: true },
+        { id: "8852014006576", name: "PFP ก้ามปูยักษ์ คุ้มกว่า 10+2 ก้าม (500 กรัม)", hasImage: true }, // ในรูปมีสองตำแหน่ง (ข้อ 13, 15) เอามาแสดงแค่อันเดียวไม่ซ้ำ
+        { id: "8852014020572", name: "PFP เต้าหู้ปลาลูกเต๋า (500 กรัม)", hasImage: true },
+        { id: "8858657201262", name: "AFM ไส้กรอกไก่ชีสเต็มคำสอดไส้ชีสเขียว (1000 กรัม)", hasImage: true },
+        { id: "8858657201736", name: "AFM ไส้กรอกไก่ย่างลุยไฟ (1000 กรัม)", hasImage: true },
+        { id: "8851055842907", name: "ฟาร์มสุข ไก่ยอใหญ่สไลด์พริก B (1000 กรัม)", hasImage: true },
+        { id: "8851055842587", name: "ยอเส้น ไก่ฟาร์ม (2 ชิ้น /900 กรัม)", hasImage: true }
+    ]; 
 
     let orderQuantities = {};
-    defaultProducts.forEach(name => {
-        orderQuantities[name] = 0;
-    });
+    defaultProducts.forEach(item => {
+        orderQuantities[item.id] = 0;
+    }); 
 
     function renderProducts() {
         const container = document.getElementById('productContainer');
         container.innerHTML = '';
         
-        defaultProducts.forEach(name => {
-            const currentQty = orderQuantities[name];
+        defaultProducts.forEach(item => {
+            const currentQty = orderQuantities[item.id];
+            
+            // ตรวจสอบเงื่อนไขการใส่รูปภาพสินค้า (.jpg)
+            let imgHTML = `<div class="no-img">ไม่มีรูปภาพ</div>`;
+            if (item.hasImage) {
+                imgHTML = `<img src="images/${item.id}.jpg" alt="${item.name}" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'no-img\'>โหลดรูปไม่ได้</div>'">`;
+            }
+
             container.innerHTML += `
                 <div class="product-card">
-                    <div class="product-name">${name}</div>
-                    <div class="controls-row">
-                        <button class="btn-qty btn-minus" onclick="changeQty('${name}', -1)">-</button>
-                        <span class="qty-display">${currentQty}</span>
-                        <button class="btn-qty btn-plus" onclick="changeQty('${name}', 1)">+</button>
+                    <div class="product-img-box">
+                        ${imgHTML}
+                    </div>
+                    <div class="product-info">
+                        <div>
+                            <div class="product-name">${item.name}</div>
+                            <div class="product-code">รหัส: ${item.id}</div>
+                        </div>
+                        <div class="controls-row">
+                            <button class="btn-qty btn-minus" onclick="changeQty('${item.id}', -1)">-</button>
+                            <span class="qty-display">${currentQty}</span>
+                            <button class="btn-qty btn-plus" onclick="changeQty('${item.id}', 1)">+</button>
+                        </div>
                     </div>
                 </div>
             `;
         });
-    }
+    } 
 
-    function changeQty(name, value) {
-        let newQty = orderQuantities[name] + value;
+    function changeQty(id, value) {
+        let newQty = orderQuantities[id] + value;
         if (newQty < 0) newQty = 0;
-        orderQuantities[name] = newQty;
+        orderQuantities[id] = newQty;
         renderProducts();
-    }
+    } 
 
     function generateOrder() {
-        const activeItems = defaultProducts.filter(name => orderQuantities[name] > 0);
+        const activeItems = defaultProducts.filter(item => orderQuantities[item.id] > 0);
         
         if (!activeItems.length) {
             return alert("ยังไม่ได้ระบุจำนวนสินค้าเลยครับ");
         }
         
         let message = "📋 รายการสั่งซื้อสินค้า\n====================\n\n";
-        activeItems.forEach(name => {
-            message += `🔹 ${name}\n   จำนวน: ${orderQuantities[name]} แพค\n\n`;
+        activeItems.forEach(item => {
+            message += `🔹 ${item.name}\n   รหัสสินค้า: ${item.id}\n   จำนวน: ${orderQuantities[item.id]} แพค\n\n`;
         });
         message += "====================";
         
@@ -279,16 +335,16 @@
         document.getElementById('hiddenTextarea').value = message;
         
         document.getElementById('orderModal').classList.add('active');
-    }
+    } 
 
     function closeModal() {
         document.getElementById('orderModal').classList.remove('active');
-    }
+    } 
 
     function copyToClipboard() {
         const hiddenEl = document.getElementById('hiddenTextarea');
         hiddenEl.select();
-        hiddenEl.setSelectionRange(0, 99999);
+        hiddenEl.setSelectionRange(0, 99999); 
 
         try {
             const successful = document.execCommand('copy');
@@ -301,7 +357,7 @@
         } catch (err) {
             alert("ระบบอัตโนมัติไม่ทำงาน กรุณาแตะคัดลอกข้อความในกล่องพรีวิวนะครับ");
         }
-    }
+    } 
 
     renderProducts();
 </script>
